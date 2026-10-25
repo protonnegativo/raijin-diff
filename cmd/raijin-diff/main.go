@@ -16,8 +16,6 @@ import (
 	"github.com/protonnegativo/raijin-diff/internal/schema"
 )
 
-const version = "0.1.0"
-
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr))
 }
@@ -48,10 +46,10 @@ func run(args []string, stdout, stderr io.Writer) int {
 		args = fs.Args()[1:]
 	}
 	if *showBanner {
-		banner.Write(stderr, "raijin-diff", version, useColor(stderr))
+		banner.Write(stderr, "raijin-diff", version(), useColor(stderr))
 	}
 	if *showVersion {
-		fmt.Fprintln(stdout, "raijin-diff", version)
+		fmt.Fprintln(stdout, "raijin-diff", version())
 		return 0
 	}
 	if len(files) != 2 {
@@ -79,7 +77,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 
 	res := schema.Result{
 		Tool:    "raijin-diff",
-		Version: version,
+		Version: version(),
 		Target:  cur.Tool + ": " + files[0] + " -> " + files[1],
 		Omitted: map[string]int{},
 		Budget:  schema.Budget{MaxItems: *maxItems, MaxBytes: *maxBytes},

@@ -37,7 +37,7 @@ func TestBannerGoesToStderrOnly(t *testing.T) {
 	if code := run([]string{"--banner", oldRun, newRun}, &out, &errb); code != 0 {
 		t.Fatalf("exit %d", code)
 	}
-	if !strings.Contains(errb.String(), "TGT-LOCK") || !strings.Contains(errb.String(), "raijin-diff v"+version) {
+	if !strings.Contains(errb.String(), "TGT-LOCK") || !strings.Contains(errb.String(), "raijin-diff "+version()) {
 		t.Errorf("banner missing or without the version: %q", errb.String())
 	}
 	if strings.Contains(out.String(), "TGT-LOCK") {
@@ -150,7 +150,7 @@ func TestTable(t *testing.T) {
 
 func TestVersion(t *testing.T) {
 	var out bytes.Buffer
-	if code := run([]string{"--version"}, &out, &bytes.Buffer{}); code != 0 || out.String() != "raijin-diff "+version+"\n" {
+	if code := run([]string{"--version"}, &out, &bytes.Buffer{}); code != 0 || out.String() != "raijin-diff "+version()+"\n" {
 		t.Errorf("version: %d %q", code, out.String())
 	}
 }
