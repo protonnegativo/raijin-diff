@@ -123,14 +123,19 @@ func TestBudgetCutsAreCounted(t *testing.T) {
 	var out, errb bytes.Buffer
 	run([]string{"--max-bytes", "900", oldRun, newRun}, &out, &errb)
 	var v struct {
-		Omitted map[string]int
-		Budget  struct{ Truncated bool }
-		Next    []string
+		Findings []struct{ Locations []string }
+		Groups   []json.RawMessage
+		Omitted  map[string]int
+		Budget   struct{ Truncated bool }
+		Next     []string
 	}
 	if err := json.Unmarshal(out.Bytes(), &v); err != nil {
 		t.Fatal(err)
 	}
-	if len(out.Bytes()) > 901 || !v.Budget.Truncated || v.Omitted["groups"]+v.Omitted["locations"]+v.Omitted["findings"] == 0 || len(v.Next) == 0 {
+	// Fit never cuts the top finding's first location, so the output may stay over the budget only
+	// when that is all that is left (the absolute raw path, which depends on the checkout, counts too).
+	floor := len(v.Findings) == 1 && len(v.Findings[0].Locations) <= 1 && len(v.Groups) == 0
+	if (len(out.Bytes()) > 901 && !floor) || !v.Budget.Truncated || v.Omitted["groups"]+v.Omitted["locations"]+v.Omitted["findings"] == 0 || len(v.Next) == 0 {
 		t.Errorf("budget: %d bytes %s", len(out.Bytes()), out.String())
 	}
 }
