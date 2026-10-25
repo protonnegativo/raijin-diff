@@ -48,6 +48,12 @@ The gap is small on small outputs. On the 6-URL probe pair raijin-diff is only *
 go install github.com/protonnegativo/raijin-diff/cmd/raijin-diff@latest
 ```
 
+This installs the latest release.
+
+### Versions
+
+Releases are tagged automatically on every change. `raijin-diff --version` shows the release (`dev` plus the commit for a local build), and `raijin-mcp update` updates every Raijin tool at once.
+
 Nothing else is needed: raijin-diff only reads JSON.
 
 ## Usage
