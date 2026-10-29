@@ -24,23 +24,23 @@ Reproduce: `bench/run.sh` (set `PY=<python with tiktoken>`). It reads the pairs 
 
 | Pair | Changes | Missing | Not a change | old + new | new only | `diff -u` | **raijin-diff** | `--pretty` | `--format table` |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| subs-gitlab | 22 | 0 | 0 | 33,770 | 16,992 | 3,183 | **1,135** | 1,601 | 301 |
-| subs-wildcard | 10 | 0 | 0 | 8,912 | 4,466 | 1,010 | **270** | 380 | 28 |
-| crawl-app | 5 | 0 | 0 | 2,183 | 1,116 | 852 | **299** | 472 | 117 |
-| probe-sample | 4 | 0 | 0 | 670 | 294 | 675 | **335** | 497 | 130 |
-| scan-sample | 5 | 0 | 0 | 433 | 252 | 582 | **300** | 450 | 136 |
-| rerun, nothing changed (subs-gitlab new.json twice) | 0 | 0 | 0 | | 16,992 | | **101** | | |
+| subs-gitlab | 22 | 0 | 0 | 33,770 | 16,992 | 3,177 | **1,144** | 1,613 | 301 |
+| subs-wildcard | 10 | 0 | 0 | 8,912 | 4,466 | 1,004 | **279** | 392 | 28 |
+| crawl-app | 5 | 0 | 0 | 2,183 | 1,116 | 846 | **308** | 484 | 117 |
+| probe-sample | 4 | 0 | 0 | 670 | 294 | 669 | **344** | 509 | 130 |
+| scan-sample | 5 | 0 | 0 | 433 | 252 | 576 | **309** | 462 | 136 |
+| rerun, nothing changed (subs-gitlab new.json twice) | 0 | 0 | 0 | | 16,992 | | **110** | | |
 
-Tokens, `o200k_base`. "Changes" are counted by `verify.py`: added and removed (entry, location) pairs, plus findings with changed fields. A moved location (a `changed` entry with an old id) counts as one added and one removed pair. 46 changes in the 5 pairs, none missing, none extra.
+Tokens, `o200k_base`; the raijin-diff column includes `schema_version` and a `version` of the form `dev-<commit>` (a release binary prints a shorter `vX.Y.Z`). "Changes" are counted by `verify.py`: added and removed (entry, location) pairs, plus findings with changed fields. A moved location (a `changed` entry with an old id) counts as one added and one removed pair. 46 changes in the 5 pairs, none missing, none extra.
 
-Against both runs, raijin-diff is **29.8×** (subs-gitlab), **33×** (subs-wildcard), **7.3×** (crawl-app), **2.0×** (probe-sample) and **1.4×** (scan-sample) smaller. Against `diff -u` it is **2.8×**, **3.7×**, **2.8×**, **2.0×** and **1.9×** smaller.
+Against both runs, raijin-diff is **29.5×** (subs-gitlab), **31.9×** (subs-wildcard), **7.1×** (crawl-app), **1.9×** (probe-sample) and **1.4×** (scan-sample) smaller. Against `diff -u` it is **2.8×**, **3.6×**, **2.7×**, **1.9×** and **1.9×** smaller.
 
 ## What the numbers mean
 
 - **The win grows with what did not change.** Two subs runs of 820 names share almost everything: raijin-diff lists 22 changes and counts 811 unchanged locations. On a 6-URL probe or a 4-finding scan there is little to leave out, and the diff costs about as much as one run.
-- **On the smallest pair it is larger than the new run alone**: 300 tokens against 252 on scan-sample. raijin-diff writes each changed entry with all its fields (title, severity, CVSS, ...) and a `was` for the old values, so an agent can act on it without opening either run. The new run alone is cheaper but does not say that the `.git/config` of `b` was fixed or that `git-config` went from medium to high.
+- **On the smallest pair it is larger than the new run alone**: 309 tokens against 252 on scan-sample. raijin-diff writes each changed entry with all its fields (title, severity, CVSS, ...) and a `was` for the old values, so an agent can act on it without opening either run. The new run alone is cheaper but does not say that the `.git/config` of `b` was fixed or that `git-config` went from medium to high.
 - **`diff -u` is a text diff, not a list of changes.** It is lossless as text, but in subs-gitlab the added name `grafana.cell-...` is a `+` line inside a `locations` list, and the finding it belongs to (`name-2cd3bd56`) is not in its 3 lines of context. The dangling CNAME is a new finding at the top of the file and a removed line in a group about 1,200 lines further down in the file; raijin-diff writes it as one `changed` entry with `"was":{"id":"cname-814cd73a","a":["172.65.164.33"],...}`. `diff -u` also repeats `target` and `summary`, which always differ.
-- **A rerun with nothing new** costs 101 tokens: the summary `no changes`, the unchanged counts and the path of the new run.
+- **A rerun with nothing new** costs 110 tokens: the summary `no changes`, the unchanged counts and the path of the new run.
 - **`--format table`** is the cheapest, but it is a human view: group changes are one line each with their count, without the locations. The JSON is the lossless output.
 
 ## How each change shows up
