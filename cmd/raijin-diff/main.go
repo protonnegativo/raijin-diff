@@ -4,6 +4,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -62,13 +63,11 @@ func run(args []string, stdout, stderr io.Writer) int {
 	}
 	old, err := load(files[0])
 	if err != nil {
-		fmt.Fprintln(stderr, "raijin-diff:", err)
-		return 1
+		return refuse(stdout, stderr, err, *format, *pretty)
 	}
 	cur, err := load(files[1])
 	if err != nil {
-		fmt.Fprintln(stderr, "raijin-diff:", err)
-		return 1
+		return refuse(stdout, stderr, err, *format, *pretty)
 	}
 	if old.Tool != cur.Tool {
 		fmt.Fprintf(stderr, "raijin-diff: %s is a %s run and %s is a %s run; compare two runs of the same tool\n", files[0], old.Tool, files[1], cur.Tool)
@@ -120,6 +119,25 @@ func run(args []string, stdout, stderr io.Writer) int {
 	}
 	write(stdout, &res, *format, *pretty)
 	return 0
+}
+
+// refuse reports an input it cannot read. An input written with a newer schema_version than this build
+// understands is a structured error in a result on stdout, which an agent can act on; any other problem
+// is a message on stderr.
+func refuse(stdout, stderr io.Writer, err error, format string, pretty bool) int {
+	var ve *schema.VersionError
+	if !errors.As(err, &ve) {
+		fmt.Fprintln(stderr, "raijin-diff:", err)
+		return 1
+	}
+	res := schema.Result{
+		Tool:    "raijin-diff",
+		Version: version(),
+		Summary: "input refused, nothing compared",
+		Errors:  []schema.Error{{Kind: "schema_version", Hint: err.Error()}},
+	}
+	write(stdout, &res, format, pretty)
+	return 1
 }
 
 func load(path string) (*schema.Run, error) {
