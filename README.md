@@ -1,5 +1,11 @@
 # ⚡ Raijin Diff
 
+[![CI](https://github.com/protonnegativo/raijin-diff/actions/workflows/ci.yml/badge.svg)](https://github.com/protonnegativo/raijin-diff/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/protonnegativo/raijin-diff)](https://github.com/protonnegativo/raijin-diff/releases/latest)
+[![License: MIT](https://img.shields.io/github/license/protonnegativo/raijin-diff)](LICENSE)
+[![Go Reference](https://pkg.go.dev/badge/github.com/protonnegativo/raijin-diff.svg)](https://pkg.go.dev/github.com/protonnegativo/raijin-diff)
+[![Go Report Card](https://goreportcard.com/badge/github.com/protonnegativo/raijin-diff)](https://goreportcard.com/report/github.com/protonnegativo/raijin-diff)
+
 **What changed between two runs of any Raijin tool: every new and resolved finding, every location added or removed, every status or severity that changed, and nothing else.**
 
 `raijin-diff` is a tool of **Raijin**, an arsenal of offensive security tools built for AI agents. It reads two outputs of the same Raijin tool (`raijin-scan`, `raijin-probe`, `raijin-subs`, `raijin-ports`, `raijin-crawl`, ...) and returns the **Raijin Schema**: one compact JSON where the findings are the changes, ranked by severity, the groups are the group-level changes, and everything that did not change is counted, not listed. It runs no engine and sends no packets.
