@@ -1,5 +1,11 @@
 # ⚡ Raijin Diff
 
+[![CI](https://github.com/protonnegativo/raijin-diff/actions/workflows/ci.yml/badge.svg)](https://github.com/protonnegativo/raijin-diff/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/protonnegativo/raijin-diff)](https://github.com/protonnegativo/raijin-diff/releases/latest)
+[![License: MIT](https://img.shields.io/github/license/protonnegativo/raijin-diff)](LICENSE)
+[![Go Reference](https://pkg.go.dev/badge/github.com/protonnegativo/raijin-diff.svg)](https://pkg.go.dev/github.com/protonnegativo/raijin-diff)
+[![Go Report Card](https://goreportcard.com/badge/github.com/protonnegativo/raijin-diff)](https://goreportcard.com/report/github.com/protonnegativo/raijin-diff)
+
 **What changed between two runs of any Raijin tool: every new and resolved finding, every location added or removed, every status or severity that changed, and nothing else.**
 
 `raijin-diff` is a tool of **Raijin**, an arsenal of offensive security tools built for AI agents. It reads two outputs of the same Raijin tool (`raijin-scan`, `raijin-probe`, `raijin-subs`, `raijin-ports`, `raijin-crawl`, ...) and returns the **Raijin Schema**: one compact JSON where the findings are the changes, ranked by severity, the groups are the group-level changes, and everything that did not change is counted, not listed. It runs no engine and sends no packets.
@@ -12,35 +18,35 @@ Here is what an agent reads to learn what changed between two runs (tokens, `o20
 
 ```
 subs, gitlab.com: 824 names, 22 changes (a dangling CNAME, 2 IPs moved, names added and gone)
-  raijin-diff   ▋                       1,135 tokens
-  diff -u       █▉                      3,183 tokens
+  raijin-diff   ▋                       1,144 tokens
+  diff -u       █▉                      3,177 tokens
   old + new     ████████████████████   33,770 tokens
 
 subs, shopify.com: 545 names, most behind one wildcard; 6 names new, 4 gone
-  raijin-diff   ▌                         270 tokens
-  diff -u       ██▎                     1,010 tokens
+  raijin-diff   ▋                         279 tokens
+  diff -u       ██▎                     1,004 tokens
   old + new     ████████████████████    8,912 tokens
 
 crawl, lab app: a new .env and SQL dump, /admin/ 403 -> 200, /graphql gone
-  raijin-diff   ██▋                       299 tokens
-  diff -u       ███████▊                  852 tokens
+  raijin-diff   ██▊                       308 tokens
+  diff -u       ███████▊                  846 tokens
   old + new     ████████████████████    2,183 tokens
 
 probe, 6 URLs: the admin panel now answers 403, a dead host came back
-  raijin-diff   █████████▉                335 tokens
-  diff -u       ████████████████████      675 tokens
-  old + new     ███████████████████▊      670 tokens
+  raijin-diff   ██████████▎               344 tokens
+  diff -u       ███████████████████▉      669 tokens
+  old + new     ████████████████████      670 tokens
 ```
 
-raijin-diff reads **30×** and **33×** fewer tokens than both subs runs, and **2.8×** and **3.7×** fewer than their `diff -u`. On the crawl it is **7.3×** smaller than both runs and **2.8×** smaller than `diff -u`. Each pair's bars are drawn to scale against the largest.
+raijin-diff reads **29.5×** and **31.9×** fewer tokens than both subs runs, and **2.8×** and **3.6×** fewer than their `diff -u`. On the crawl it is **7.1×** smaller than both runs and **2.7×** smaller than `diff -u`. Each pair's bars are drawn to scale against the largest.
 
 - **Nothing that changed is lost.** Every finding, group and location added or removed is listed, and so is every finding whose fields changed. `bench/verify.py` computes the changes on its own from the two inputs: 46 changes in the 5 pairs, none missing and none listed that is not a change.
 - **Changes are explained.** A location that moved from one finding or group to another is one `changed` entry with the old values in `was`: `{"status":200, "was":{"id":"403-f84a6e68","status":403,...}}`, not a removal and an addition.
 - **The important changes come first.** New and changed findings, ranked by severity, then the resolved ones.
-- **A rerun with nothing new costs almost nothing.** The gitlab.com run diffed against itself is 101 tokens, against 16,992 for reading it again.
+- **A rerun with nothing new costs almost nothing.** The gitlab.com run diffed against itself is 110 tokens, against 16,992 for reading it again.
 - **Unchanged items are counted, not listed.** The agent already has the new run, and `raw` points to it.
 
-The gap is small on small outputs. On the 6-URL probe pair raijin-diff is only **2×** smaller than both runs and than `diff -u`, and on a 4-finding scan pair it is **1.4×** smaller than both runs and a little larger (300 tokens against 252) than reading the new run alone, which does not say what was resolved. raijin-diff writes each changed entry in full, with its fields, so the agent can act on it without opening the runs; that costs more than a bare line when there is little to leave out. Full method and numbers are in [BENCHMARK.md](BENCHMARK.md), and `bench/run.sh` reproduces them.
+The gap is small on small outputs. On the 6-URL probe pair raijin-diff is only **1.9×** smaller than both runs and than `diff -u`, and on a 4-finding scan pair it is **1.4×** smaller than both runs and a little larger (309 tokens against 252) than reading the new run alone, which does not say what was resolved. raijin-diff writes each changed entry in full, with its fields, so the agent can act on it without opening the runs; that costs more than a bare line when there is little to leave out. Full method and numbers are in [BENCHMARK.md](BENCHMARK.md), and `bench/run.sh` reproduces them.
 
 ## Install
 
@@ -73,8 +79,9 @@ Flags can go before or after the two files. The files must come from the same to
 
 ```json
 {
+  "schema_version": 1,
   "tool": "raijin-diff",
-  "version": "0.1.0",
+  "version": "v0.1.0",
   "target": "raijin-crawl: bench/fixtures/crawl-app/old.json -> bench/fixtures/crawl-app/new.json",
   "summary": "2 new, 1 resolved and 1 changed findings",
   "origin": "http://localhost:19501",
@@ -90,7 +97,7 @@ Flags can go before or after the two files. The files must come from the same to
 }
 ```
 
-That is a real run on the `crawl-app` benchmark pair, with one entry per line here and the `raw` path shortened; the tool writes it as one line. These raijin-crawl routes have no `locations` because their only URL is the route itself, as in raijin-crawl's own output.
+That is a real run on the `crawl-app` benchmark pair, with one entry per line here, the `raw` path shortened and `version` as a release binary prints it (a local build prints `dev-<commit>`); the tool writes it as one line. These raijin-crawl routes have no `locations` because their only URL is the route itself, as in raijin-crawl's own output.
 
 Each finding and group is the entry as the tool wrote it, with every field it had, plus:
 
@@ -154,7 +161,9 @@ The banner is **off by default**. `--banner` prints it to **stderr** (never stdo
 
 raijin-diff has no `--scope`, `--input`, `--raw`, `--state` or engine path: it runs no engine and touches no target. The scope was applied by the tool that made each run.
 
-Exit codes: `0` when the diff worked (with or without changes), `1` on a usage error (wrong number of files, a file that is missing or is not a Raijin output, two different tools, a raijin-diff output as input). There is no engine, so there is no exit code `2`.
+`schema_version` (currently `1`) is the first field of every output. An input written with a newer `schema_version` than this build understands is refused with an error of `kind:"schema_version"` in the JSON on stdout, and nothing is compared; update raijin-diff.
+
+Exit codes follow the Raijin rule: `0` when the diff worked (with or without changes); `2` for a structured error, with the JSON on stdout for the agent to tell apart by its `kind` (here, an input with a newer `schema_version`); `1` for a usage error, with a message on stderr and nothing on stdout (wrong number of files, a file that is missing or is not a Raijin output, two different tools, a raijin-diff output as input, an invalid flag). raijin-diff has no `--scope` and no engine, so it has no `kind:"scope"` error and no missing-engine error.
 
 ## Development
 
@@ -164,7 +173,7 @@ go vet ./...
 bench/run.sh            # PY=<python with tiktoken>
 ```
 
-Standard library only. `bench/fixtures.py` rebuilds the benchmark pairs from the sibling tools' own fixtures (`FIXTURES=1 bench/run.sh`).
+raijin-diff depends only on the standard library and [raijin-core](https://github.com/protonnegativo/raijin-core), the shared Raijin Schema code. `bench/fixtures.py` rebuilds the benchmark pairs from the sibling tools' own fixtures (`FIXTURES=1 bench/run.sh`).
 
 ## Responsible use
 

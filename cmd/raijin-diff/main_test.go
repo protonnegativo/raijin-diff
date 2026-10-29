@@ -154,3 +154,42 @@ func TestVersion(t *testing.T) {
 		t.Errorf("version: %d %q", code, out.String())
 	}
 }
+
+func TestRefusesNewerSchemaVersion(t *testing.T) {
+	newer := filepath.Join(t.TempDir(), "newer.json")
+	if err := os.WriteFile(newer, []byte(`{"schema_version":2,"tool":"raijin-probe","findings":[],"groups":[]}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{{newer, newRun}, {oldRun, newer}} {
+		var out, errb bytes.Buffer
+		if code := run(args, &out, &errb); code != 2 {
+			t.Fatalf("%v: exit %d, want 2 for a newer schema_version", args, code)
+		}
+		if !strings.HasPrefix(out.String(), `{"schema_version":1,`) {
+			t.Fatalf("%v: stdout must start with the envelope, got %q", args, out.String())
+		}
+		var v struct {
+			SchemaVersion int    `json:"schema_version"`
+			Tool          string `json:"tool"`
+			Errors        []struct{ Kind, Hint string }
+		}
+		if err := json.Unmarshal(out.Bytes(), &v); err != nil {
+			t.Fatalf("%v: stdout is not JSON: %v: %s", args, err, out.String())
+		}
+		if v.SchemaVersion != 1 || v.Tool != "raijin-diff" || len(v.Errors) != 1 || v.Errors[0].Kind != "schema_version" ||
+			!strings.Contains(v.Errors[0].Hint, "unsupported schema_version 2") || !strings.Contains(v.Errors[0].Hint, "versions 0 to 1") {
+			t.Errorf("%v: got %s", args, out.String())
+		}
+	}
+}
+
+func TestAcceptsInputWithAndWithoutSchemaVersion(t *testing.T) {
+	cur := filepath.Join(t.TempDir(), "v1.json")
+	if err := os.WriteFile(cur, []byte(`{"schema_version":1,"tool":"raijin-probe","findings":[],"groups":[]}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var out, errb bytes.Buffer
+	if code := run([]string{oldRun, cur}, &out, &errb); code != 0 {
+		t.Fatalf("exit %d: %s%s", code, out.String(), errb.String())
+	}
+}
