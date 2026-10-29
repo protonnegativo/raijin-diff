@@ -122,8 +122,8 @@ func run(args []string, stdout, stderr io.Writer) int {
 }
 
 // refuse reports an input it cannot read. An input written with a newer schema_version than this build
-// understands is a structured error in a result on stdout, which an agent can act on; any other problem
-// is a message on stderr.
+// understands is a structured error in a result on stdout with exit code 2, which an agent can act on (raijin-mcp
+// returns that JSON as the error); any other problem is a message on stderr with exit code 1.
 func refuse(stdout, stderr io.Writer, err error, format string, pretty bool) int {
 	var ve *schema.VersionError
 	if !errors.As(err, &ve) {
@@ -137,7 +137,7 @@ func refuse(stdout, stderr io.Writer, err error, format string, pretty bool) int
 		Errors:  []schema.Error{{Kind: "schema_version", Hint: err.Error()}},
 	}
 	write(stdout, &res, format, pretty)
-	return 1
+	return 2
 }
 
 func load(path string) (*schema.Run, error) {

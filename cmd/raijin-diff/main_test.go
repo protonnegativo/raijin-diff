@@ -162,8 +162,11 @@ func TestRefusesNewerSchemaVersion(t *testing.T) {
 	}
 	for _, args := range [][]string{{newer, newRun}, {oldRun, newer}} {
 		var out, errb bytes.Buffer
-		if code := run(args, &out, &errb); code == 0 {
-			t.Fatalf("%v: a newer schema_version must be refused", args)
+		if code := run(args, &out, &errb); code != 2 {
+			t.Fatalf("%v: exit %d, want 2 for a newer schema_version", args, code)
+		}
+		if !strings.HasPrefix(out.String(), `{"schema_version":1,`) {
+			t.Fatalf("%v: stdout must start with the envelope, got %q", args, out.String())
 		}
 		var v struct {
 			SchemaVersion int    `json:"schema_version"`
